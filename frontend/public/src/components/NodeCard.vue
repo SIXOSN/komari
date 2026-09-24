@@ -457,7 +457,8 @@ function hasRegion(region: string | null | undefined): boolean {
                 <span class="truncate" :title="task.name">{{ task.name }}</span>
                 <span
                   v-if="task.routeLabel"
-                  class="shrink-0 rounded bg-emerald-500/10 px-1 py-0.5 text-[10px] font-medium text-emerald-500"
+                  class="shrink-0 rounded px-1 py-0.5 text-[10px] font-medium"
+                  :class="task.routeLabel === '未知' ? 'border border-amber-400/50 bg-amber-400/20 text-amber-500' : 'bg-emerald-500/10 text-emerald-500'"
                   :title="task.routeTooltip"
                 >{{ task.routeLabel }}</span>
               </span>
