@@ -99,10 +99,19 @@ func TestGetEditablePingTasksGroupsIPv6Child(t *testing.T) {
 		t.Fatal(err)
 	}
 	editable, err := GetEditablePingTasks()
-	if err != nil || len(editable) != 1 {
+	if err != nil {
 		t.Fatalf("editable tasks: %+v, err=%v", editable, err)
 	}
-	if editable[0].Id != parent.Id || editable[0].TargetIPv6 != child.Target || !editable[0].HasFamily("ipv6") {
-		t.Fatalf("dual-stack settings lost: %+v", editable[0])
+	for _, item := range editable {
+		if item.Id == child.Id {
+			t.Fatal("IPv6 child must not appear as a separate admin task")
+		}
+		if item.Id == parent.Id {
+			if item.TargetIPv6 != child.Target || !item.HasFamily("ipv6") {
+				t.Fatalf("dual-stack settings lost: %+v", item)
+			}
+			return
+		}
 	}
+	t.Fatal("dual-stack parent missing from admin tasks")
 }
