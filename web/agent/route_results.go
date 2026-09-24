@@ -13,6 +13,7 @@ import (
 type RouteResult struct {
 	UUID      string    `json:"uuid"`
 	TaskID    uint      `json:"task_id"`
+	Family    string    `json:"family"`
 	Label     string    `json:"label"`
 	Status    string    `json:"status"`
 	CheckedAt time.Time `json:"checked_at"`
@@ -40,8 +41,8 @@ var routeASNCache = struct {
 	items map[string]asnCacheEntry
 }{items: make(map[string]asnCacheEntry)}
 
-func routeResultKey(uuid string, taskID uint) string {
-	return uuid + ":" + stringID(taskID)
+func routeResultKey(uuid string, taskID uint, family string) string {
+	return uuid + ":" + stringID(taskID) + ":" + family
 }
 
 func stringID(id uint) string {
@@ -49,8 +50,11 @@ func stringID(id uint) string {
 }
 
 // RecordRouteResult resolves visible public hops to origin ASNs in the background.
-func RecordRouteResult(uuid string, taskID uint, hops []string, traceError string) {
-	result := RouteResult{UUID: uuid, TaskID: taskID, Status: "unknown", CheckedAt: time.Now().UTC()}
+func RecordRouteResult(uuid string, taskID uint, family string, hops []string, traceError string) {
+	if family == "" {
+		family = "ipv4" // Reports from older forked agents.
+	}
+	result := RouteResult{UUID: uuid, TaskID: taskID, Family: family, Status: "unknown", CheckedAt: time.Now().UTC()}
 	if len(hops) > 28 {
 		hops = hops[:28]
 	}
@@ -59,9 +63,12 @@ func RecordRouteResult(uuid string, taskID uint, hops []string, traceError strin
 		result.Status = "ok"
 	} else if traceError != "" {
 		result.Status = "error"
+		if family == "ipv6" && traceError == "no IPv6 target address" {
+			result.Label = "NO_IPV6"
+		}
 	}
 	routeResults.Lock()
-	routeResults.items[routeResultKey(uuid, taskID)] = result
+	routeResults.items[routeResultKey(uuid, taskID, family)] = result
 	routeResults.Unlock()
 }
 
