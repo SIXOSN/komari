@@ -15,6 +15,7 @@ jobs:
         with:
           go-version-file: go.mod
       - run: go test ./web/agent
+      - run: go test ./web/rpc/jsonrpc
 
   build-frontend:
     runs-on: ubuntu-latest
