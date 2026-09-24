@@ -37,7 +37,7 @@ type routeCountryRecord struct {
 }
 
 // StartRouteCountryUpdater loads an existing database immediately and checks
-// once an hour whether its last successful download is at least seven days old.
+// once a day whether its last successful download is at least seven days old.
 // A failed update leaves the previous reader and file intact.
 func StartRouteCountryUpdater() func() error {
 	ctx, cancel := context.WithCancel(context.Background())
@@ -48,7 +48,7 @@ func StartRouteCountryUpdater() func() error {
 			logger.Warn("geoip", "route country database could not be loaded", "error", err)
 		}
 		refreshRouteCountryIfDue(ctx, routeCountryFilePath, routeCountryURL, time.Now())
-		ticker := time.NewTicker(time.Hour)
+		ticker := time.NewTicker(24 * time.Hour)
 		defer ticker.Stop()
 		for {
 			select {
