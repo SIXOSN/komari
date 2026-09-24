@@ -15,7 +15,6 @@ jobs:
         with:
           go-version-file: go.mod
       - run: go test ./web/agent
-      - run: go test ./web/rpc/jsonrpc
 
   build-frontend:
     runs-on: ubuntu-latest
@@ -28,6 +27,17 @@ jobs:
         uses: ./.github/actions/build-frontend
         with:
           artifact-name: komari-frontend
+
+  test-route-settings:
+    needs: build-frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/restore-frontend
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - run: go test ./web/rpc/jsonrpc
 
   build-binaries:
     needs: build-frontend
