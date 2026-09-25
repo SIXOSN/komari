@@ -23,14 +23,36 @@ func TestClassifyRoute(t *testing.T) {
 		{"CN2 GIA without CTG gateway", []routeHop{hop("59.43.1.1", "4809")}, "CN2GIA"},
 		{"CN2 GT switches to 163", []routeHop{hop("59.43.1.1", "4809"), hop("202.97.1.1", "4134")}, "CN2GT"},
 		{"CN2 GIA may later cross 163 near destination", []routeHop{hop("1.1.1.1", "64500"), hop("59.43.1.1", "4809"), hop("202.97.1.1", "4134")}, "CN2GIA"},
-		{"DMIT mainland entry remains CN2 GIA", []routeHop{
+		{"GeoIP mislocates an overseas 163 hand-off before CN2 GIA", []routeHop{
 			{address: net.ParseIP("19.41.250.250"), country: "US", ttl: 1},
 			{address: net.ParseIP("19.41.250.158"), country: "US", ttl: 2},
-			{address: net.ParseIP("218.30.48.141"), country: "US", asns: []string{"4134"}, ttl: 3},
+			{address: net.ParseIP("218.30.48.141"), country: "CN", asns: []string{"4134"}, ttl: 3},
 			{address: net.ParseIP("59.43.189.41"), country: "CN", ttl: 4},
 			{address: net.ParseIP("59.43.16.165"), country: "CN", ttl: 6},
 			{address: net.ParseIP("211.136.204.78"), country: "CN", asns: []string{"56040"}, ttl: 12},
 		}, "CN2GIA"},
+		{"one later CN2 hop does not override 163", []routeHop{
+			{address: net.ParseIP("19.41.250.250"), country: "US", ttl: 1},
+			{address: net.ParseIP("218.30.48.141"), country: "CN", asns: []string{"4134"}, ttl: 3},
+			{address: net.ParseIP("59.43.189.41"), country: "CN", ttl: 4},
+		}, "163"},
+		{"confirmed 202.97 entry remains 163", []routeHop{
+			{address: net.ParseIP("19.41.250.250"), country: "US", ttl: 1},
+			{address: net.ParseIP("202.97.1.1"), country: "CN", asns: []string{"4134"}, ttl: 3},
+			{address: net.ParseIP("59.43.189.41"), country: "CN", ttl: 4},
+			{address: net.ParseIP("59.43.16.165"), country: "CN", ttl: 6},
+		}, "163"},
+		{"no observed foreign hop keeps 163 entry", []routeHop{
+			{address: net.ParseIP("218.30.48.141"), country: "CN", asns: []string{"4134"}, ttl: 3},
+			{address: net.ParseIP("59.43.189.41"), country: "CN", ttl: 4},
+			{address: net.ParseIP("59.43.16.165"), country: "CN", ttl: 6},
+		}, "163"},
+		{"distant CN2 segment does not override 163 entry", []routeHop{
+			{address: net.ParseIP("19.41.250.250"), country: "US", ttl: 1},
+			{address: net.ParseIP("218.30.48.141"), country: "CN", asns: []string{"4134"}, ttl: 3},
+			{address: net.ParseIP("59.43.189.41"), country: "CN", ttl: 9},
+			{address: net.ParseIP("59.43.16.165"), country: "CN", ttl: 10},
+		}, "163"},
 		{"59.43 overrides a conflicting ASN like NetQuality", []routeHop{hop("1.1.1.1", "4134"), hop("59.43.189.41", "4134")}, "CN2GIA"},
 		{"late CTGNet still identifies CTG GIA", []routeHop{hop("1.1.1.1", "64500"), hop("59.43.1.1", "4809"), hop("2.2.2.2", "23764"), hop("202.97.1.1", "4134")}, "CTGGIA"},
 		{"CN2 GT skips CTG gateway at first China hop", []routeHop{hop("59.43.1.1", "4809"), hop("2.2.2.2", "23764"), hop("202.97.1.1", "4134")}, "CN2GT"},
