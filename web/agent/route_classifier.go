@@ -67,6 +67,13 @@ func classifyRoute(hops []routeHop) string {
 		}
 	}
 	if firstChina >= 0 {
+		// Country-only GeoIP can place an overseas AS4134 hand-off in China.
+		// If the immediately following backbone is clearly CN2, use its first
+		// hop as the mainland entry instead. An isolated 59.43 hop is not enough
+		// to override a real 163 entry.
+		if cn2Entry := cn2EntryAfterMislocated163(hops, firstChina); cn2Entry >= 0 {
+			firstChina = cn2Entry
+		}
 		// NetQuality skips the AS17676 hand-off at the mainland entry.
 		if hasASN(hops[firstChina], "17676") && firstChina+1 < len(hops) {
 			firstChina++
@@ -142,6 +149,45 @@ func classifyRoute(hops []routeHop) string {
 	default:
 		return ""
 	}
+}
+
+// cn2EntryAfterMislocated163 handles a GeoIP boundary error without assigning
+// a route type from a server name or from the mere presence of one CN2 address.
+// A non-China hop must precede the apparent 163 entry, and two distinct 59.43
+// hops must follow within four TTLs without a confirmed 202.97/163 hop.
+func cn2EntryAfterMislocated163(hops []routeHop, firstChina int) int {
+	if firstChina <= 0 || !hasASN(hops[firstChina], "4134") || inIPv4Prefix(hops[firstChina], 202, 97) {
+		return -1
+	}
+	foreignBefore := false
+	for _, hop := range hops[:firstChina] {
+		if hop.country != "" && hop.country != "CN" {
+			foreignBefore = true
+			break
+		}
+	}
+	if !foreignBefore {
+		return -1
+	}
+	entryTTL := routeHopTTL(hops[firstChina], firstChina)
+	firstCN2 := -1
+	for index := firstChina + 1; index < len(hops); index++ {
+		hop := hops[index]
+		if routeHopTTL(hop, index)-entryTTL > 4 || inIPv4Prefix(hop, 202, 97) {
+			break
+		}
+		if inIPv4Prefix(hop, 59, 43) {
+			if firstCN2 >= 0 {
+				return firstCN2
+			}
+			firstCN2 = index
+			continue
+		}
+		if hop.country == "CN" && hasASN(hop, "4134") {
+			break
+		}
+	}
+	return -1
 }
 
 func hasCN2Hop(hops []routeHop) bool {
