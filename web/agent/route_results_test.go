@@ -59,8 +59,8 @@ func TestClassifyRoute(t *testing.T) {
 		{"Mobile CMIN2", []routeHop{hop("1.1.1.1", "58807"), hop("2.2.2.2", "9808")}, "CMIN2"},
 		{"Mobile CMI", []routeHop{hop("1.1.1.1", "58453"), hop("2.2.2.2", "9808")}, "CMI"},
 		{"Mobile AS9808 uses NetQuality CMI label", []routeHop{hop("1.1.1.1", "9808")}, "CMI"},
-		{"CERNET", []routeHop{hop("1.1.1.1", "4538")}, "CERNET"},
-		{"CSTNET", []routeHop{hop("1.1.1.1", "7497")}, "CSTNET"},
+		{"CERNET mainland entry", []routeHop{{address: net.ParseIP("101.6.6.1"), country: "CN", asns: []string{"4538"}}}, "CERNET"},
+		{"CSTNET mainland entry", []routeHop{{address: net.ParseIP("159.226.1.1"), country: "CN", asns: []string{"7497"}}}, "CSTNET"},
 		{"IPv6 backbone", []routeHop{hop("2001:db8::1", "9929")}, "9929"},
 		{"unknown", []routeHop{hop("1.1.1.1", "64500")}, ""},
 	}
