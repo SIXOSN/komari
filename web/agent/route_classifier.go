@@ -56,36 +56,9 @@ func hasASNIn(hops []routeHop, asn string) bool {
 	return false
 }
 
-// domesticNetwork identifies a visible Chinese backbone, not an overseas
-// international gateway such as CTGNet or CMI.
-func domesticNetwork(hop routeHop) string {
-	switch {
-	case inIPv4Prefix(hop, 59, 43) || hasASN(hop, "4809"):
-		return "CN2"
-	case inIPv4Prefix(hop, 202, 97) || hasASN(hop, "4134"):
-		return "163"
-	case hasASN(hop, "9929"):
-		return "9929"
-	case hasASN(hop, "4837"):
-		return "4837"
-	case hasASN(hop, "4808"):
-		return "4808"
-	case hasASN(hop, "58807"):
-		return "CMIN2"
-	case hasASN(hop, "9808"):
-		return "CMNET"
-	case hasASN(hop, "4538"):
-		return "CERNET"
-	case hasASN(hop, "7497"):
-		return "CSTNET"
-	default:
-		return ""
-	}
-}
-
 func classifyRoute(hops []routeHop) string {
-	// NetQuality's CN2 distinction depends on the first Chinese hop, not
-	// whether a 202.97 hop appears anywhere near the destination.
+	// NetQuality uses the first mainland hop as the entry, then falls back to
+	// visible ASNs across the whole path when that hop is unrecognized.
 	firstChina := -1
 	for index, hop := range hops {
 		if hop.country == "CN" {
@@ -93,35 +66,23 @@ func classifyRoute(hops []routeHop) string {
 			break
 		}
 	}
-	if firstChina < 0 && hasCN2Hop(hops) {
-		return "CN2" // No confirmed mainland entry; do not infer GIA or GT.
-	}
-	// When the local database is unavailable, retain the previous generic
-	// backbone detection for other providers, but do not claim a CN2 tier.
-	entryIndex := -1
 	if firstChina >= 0 {
-		entryIndex = firstChina
-	} else {
-		for index, hop := range hops {
-			if domesticNetwork(hop) != "" {
-				entryIndex = index
-				break
-			}
+		// NetQuality skips the AS17676 hand-off at the mainland entry.
+		if hasASN(hops[firstChina], "17676") && firstChina+1 < len(hops) {
+			firstChina++
 		}
-	}
-	if entryIndex >= 0 {
-		index := entryIndex
-		entry := domesticNetwork(hops[index])
-		switch entry {
-		case "CN2":
-			if routeHopTTL(hops[index], index) > 1 {
+		entry := hops[firstChina]
+		switch {
+		// NetQuality normalizes 59.43.* to AS4809 before testing the entry ASN.
+		case inIPv4Prefix(entry, 59, 43) || hasASN(entry, "4809"):
+			if routeHopTTL(entry, firstChina) > 1 {
 				if hasASNIn(hops, "23764") {
 					return "CTGGIA"
 				}
 				return "CN2GIA"
 			}
-			for _, later := range hops[index+1:] {
-				if domesticNetwork(later) == "CN2" || hasASN(later, "23764") {
+			for _, later := range hops[firstChina+1:] {
+				if inIPv4Prefix(later, 59, 43) || hasASN(later, "4809") || hasASN(later, "23764") {
 					continue
 				}
 				if inIPv4Prefix(later, 202, 97) {
@@ -129,30 +90,55 @@ func classifyRoute(hops []routeHop) string {
 				}
 				break
 			}
-			return "CN2GIA" // A path label, not proof of a purchased service tier.
-		case "4837":
-			if hasASNIn(hops[:index], "10099") {
+			return "CN2GIA"
+		case hasASN(entry, "4134"):
+			return "163"
+		case hasASN(entry, "4837"):
+			if firstChina > 0 && hasASN(hops[firstChina-1], "10099") {
 				return "10099"
 			}
-		case "CMNET":
-			if hasASNIn(hops[:index], "58453") {
-				return "CMI"
+			return "4837"
+		case hasASN(entry, "58453"):
+			return "CMI"
+		case hasASN(entry, "58807"):
+			return "CMIN2"
+		case hasASN(entry, "9808"):
+			if hasASNIn(hops, "58807") {
+				return "CMIN2"
 			}
+			return "CMI"
+		case hasASN(entry, "9929"):
+			return "9929"
+		case hasASN(entry, "10099"):
+			if hasASNIn(hops, "9929") {
+				return "9929"
+			}
+			return "10099"
+		case hasASN(entry, "23764"):
+			return "CTGGIA"
+		case hasASN(entry, "4538"):
+			return "CERNET"
+		case hasASN(entry, "7497"):
+			return "CSTNET"
 		}
-		if entry == "" && hasCN2Hop(hops) {
-			return "CN2"
-		}
-		return entry
 	}
-	// A visible international gateway is useful even when mainland hops do
-	// not respond; it is not evidence of a particular premium tier.
+	// Keep NetQuality's fallback order. These generic labels do not imply a
+	// confirmed mainland entry or a premium CN2 tier.
 	switch {
-	case hasASNIn(hops, "23764"):
-		return "CTGNet"
+	case hasASNIn(hops, "58807"):
+		return "CMIN2"
+	case hasASNIn(hops, "9929"):
+		return "9929"
 	case hasASNIn(hops, "10099"):
 		return "10099"
-	case hasASNIn(hops, "58453"):
+	case hasCN2Hop(hops):
+		return "CN2"
+	case hasASNIn(hops, "9808"):
 		return "CMI"
+	case hasASNIn(hops, "4134"):
+		return "163"
+	case hasASNIn(hops, "4837"):
+		return "4837"
 	default:
 		return ""
 	}
