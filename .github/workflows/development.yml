@@ -12,13 +12,13 @@ jobs:
 
     steps:
       - name: Checkout code
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Clone and build frontend
         uses: ./.github/actions/build-frontend
 
       - name: Set up Go
-        uses: actions/setup-go@v5
+        uses: actions/setup-go@v6
         with:
           go-version-file: go.mod
 
@@ -31,7 +31,7 @@ jobs:
           go build -ldflags "-X github.com/komari-monitor/komari/utils.CurrentVersion=dev -X github.com/komari-monitor/komari/utils.VersionHash=${VERSION_SHA}" -o komari .
 
       - name: Upload binary as artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v6
         with:
           name: komari
           path: komari
@@ -45,12 +45,12 @@ jobs:
 
     steps:
       - name: Download binary
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v7
         with:
           name: komari
 
       - name: Setup SSH Key
-        uses: webfactory/ssh-agent@v0.8.0
+        uses: webfactory/ssh-agent@v0.10.0
         with:
           ssh-private-key: ${{ secrets.PRODUCTION_SSH_KEY }}
 
