@@ -45,6 +45,7 @@ const data = computed(() => nodesStore.visibleNodesByUuid.get(String(route.param
 const detailNodes = computed(() => nodesStore.visibleNodes)
 const detailNodeIndex = computed(() => detailNodes.value.findIndex(node => node.uuid === data.value?.uuid))
 const trafficCounters = computed(() => data.value ? getTrafficCounters(data.value) : { up: 0, down: 0, cycle: false })
+const hasTrafficResetDay = computed(() => (data.value?.traffic_reset_day ?? 0) > 0)
 const isFavoriteNode = computed(() => data.value ? appStore.isFavoriteNode(data.value.uuid) : false)
 
 let trafficPeakSeq = 0
@@ -435,6 +436,8 @@ const trafficUsedPercentage = computed(() => {
 })
 
 const trafficUsageText = computed(() => {
+  if (hasTrafficResetDay.value && !trafficCounters.value.cycle)
+    return '加载中'
   if (!hasTrafficLimit.value)
     return '无限流量'
   return `${formatBytes(trafficUsed.value)} / ${formatBytes(data.value?.traffic_limit ?? 0)}`
@@ -695,7 +698,7 @@ const metricCards = computed<MetricCard[]>(() => appStore.detailMetricCardOrder.
           <div class="gap-3 grid grid-cols-2">
             <div class="relative min-w-0 overflow-hidden rounded-sm bg-slate-500/5 p-2">
               <div
-                v-if="hasTrafficLimit"
+                v-if="hasTrafficLimit && (!hasTrafficResetDay || trafficCounters.cycle)"
                 class="absolute inset-y-0 left-0 rounded-sm pointer-events-none transition-[width,background-color] duration-300 ease-out"
                 :class="trafficProgressClass"
                 :style="trafficProgressStyle"
@@ -703,7 +706,7 @@ const metricCards = computed<MetricCard[]>(() => appStore.detailMetricCardOrder.
               <div class="relative flex flex-col gap-1.5">
                 <div class="flex gap-1 items-center text-muted-foreground">
                   <Icon icon="icon-park-outline:transfer-data" :width="14" :height="14" />
-                  <span class="text-xs sm:text-sm">{{ trafficCounters.cycle ? '本周期流量' : '总流量' }}</span>
+                  <span class="text-xs sm:text-sm">{{ hasTrafficResetDay ? '月流量' : '总流量' }}</span>
                   <Badge
                     v-for="proto in ipSupport" :key="proto" variant="outline"
                     class="!text-[10px] rounded text-emerald-600 border-emerald-600/25 px-1 py-0 leading-none"
@@ -712,7 +715,7 @@ const metricCards = computed<MetricCard[]>(() => appStore.detailMetricCardOrder.
                   </Badge>
                   <div class="flex-1" />
                   <span class="hidden sm:block text-[11px] font-medium text-foreground/70">
-                    {{ formatBytes(trafficCounters.up) }} / {{ formatBytes(trafficCounters.down) }}
+                    {{ hasTrafficResetDay && !trafficCounters.cycle ? '—' : `${formatBytes(trafficCounters.up)} / ${formatBytes(trafficCounters.down)}` }}
                   </span>
                 </div>
                 <span class="text-xs sm:text-sm break-all">{{ trafficUsageText }}</span>
