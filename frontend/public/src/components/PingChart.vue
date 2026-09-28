@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { Spinner } from '@/components/ui/spinner'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
+import { useRouteResults } from '@/composables/useRouteResults'
 import { PING_RECORD_MAX_COUNT } from '@/constants/load'
 import { loadPingRecordsWithTasks } from '@/services/history.service'
 import { loadPingMetricStats, loadPublicPingTasks, queryMetrics } from '@/services/metrics.service'
@@ -17,6 +18,7 @@ import { useAppStore } from '@/stores/app'
 import { ACCESSIBLE_LINE_TYPES, getChartSeriesPalette } from '@/utils/chartPalette'
 import { isPingMetric, normalizeMetricSeriesList, orderPingTasksByBackend, PING_LATENCY_METRIC, pingTaskId, pingTaskName } from '@/utils/metricSeries'
 import { cutPeakValues, interpolateNullsLinear } from '@/utils/recordHelper'
+import { getRouteBadges } from '@/utils/routeBadges'
 import '@/utils/echarts' // 共享 ECharts 配置
 
 const props = defineProps<{
@@ -149,6 +151,11 @@ watch(availableViews, (views) => {
 // ==================== 数据状态 ====================
 const remoteData = shallowRef<PingRecord[]>([])
 const tasks = shallowRef<PingTaskInfo[]>([])
+const routeResults = useRouteResults()
+const routeBadgesByTask = computed(() => new Map(tasks.value.map(task => [
+  task.id,
+  getRouteBadges(routeResults.value, props.uuid, task.id, task.type),
+])))
 const loading = ref(false)
 const error = ref<string | null>(null)
 const legacyCustomRangeFallback = ref(false)
@@ -844,9 +851,16 @@ onBeforeUnmount(() => {
           >
             <div class="flex-1 min-w-0">
               <TooltipProvider>
-                <div class="flex gap-2 items-center">
+                <div class="flex min-w-0 gap-1.5 items-center">
                   <div class="rounded h-4 w-1" :style="{ backgroundColor: task.color }" />
-                  <span class="text-sm font-semibold truncate">{{ task.name }}</span>
+                  <span class="min-w-0 truncate text-sm font-semibold" :title="task.name">{{ task.name }}</span>
+                  <span
+                    v-for="badge in routeBadgesByTask.get(task.id) ?? []"
+                    :key="badge.family"
+                    class="shrink-0 whitespace-nowrap rounded px-1 py-0.5 text-[10px] font-medium"
+                    :class="badge.warning ? 'ring-1 ring-inset ring-amber-400/50 bg-amber-400/20 text-amber-500' : 'bg-emerald-500/10 text-emerald-500'"
+                    :title="badge.tooltip"
+                  >{{ (routeBadgesByTask.get(task.id)?.length ?? 0) > 1 ? `${badge.family === 'ipv6' ? '6' : '4'}·` : '' }}{{ badge.label }}</span>
                   <div class="flex-1" />
                   <Tooltip
                     :open="isTouchTooltipMode ? activeTaskTooltipId === task.id : undefined"
