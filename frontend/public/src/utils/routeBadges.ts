@@ -28,7 +28,7 @@ const ROUTE_NAMES: Record<string, string> = {
 }
 
 export function getRouteBadges(results: RouteResult[], uuid: string, taskId: number, taskType?: string): RouteBadge[] {
-  if (taskType && taskType !== 'tcp')
+  if (taskType !== 'tcp')
     return []
 
   const routes = results
@@ -36,7 +36,7 @@ export function getRouteBadges(results: RouteResult[], uuid: string, taskId: num
     .sort((left, right) => (left.family || 'ipv4').localeCompare(right.family || 'ipv4'))
 
   if (!routes.length)
-    return taskType === 'tcp' ? [{ family: '', label: '待检测', tooltip: '等待 Agent 探测回国路由', warning: false }] : []
+    return [{ family: '', label: '待检测', tooltip: '等待 Agent 探测回国路由', warning: false }]
 
   return routes.map((result) => {
     const label = result.label === 'NO_IPV6' ? '无IPv6' : result.label || '未知'
