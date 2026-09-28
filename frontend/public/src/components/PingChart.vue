@@ -2,7 +2,8 @@
 import type { MetricSeries, PingMetricTaskStats, PingRecord, PingTaskInfo } from '@/utils/rpc'
 import { Icon } from '@iconify/vue'
 import dayjs from 'dayjs'
-import { computed, onBeforeUnmount, onMounted, reactive, ref, shallowRef, watch, watchEffect } from 'vue'
+import { connect, disconnect } from 'echarts/core'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, shallowRef, useId, watch, watchEffect } from 'vue'
 import VChart from 'vue-echarts'
 import { Button } from '@/components/ui/button'
 import { Empty } from '@/components/ui/empty'
@@ -27,6 +28,7 @@ const props = defineProps<{
 
 const appStore = useAppStore()
 const isDark = computed(() => appStore.isDark)
+const chartGroup = `ping-detail-${useId()}`
 
 interface CustomRange {
   start: dayjs.Dayjs
@@ -643,7 +645,7 @@ const baseTooltipConfig = computed(() => ({
   },
   extraCssText: `backdrop-filter: blur(5px);z-index:9;box-shadow:0 0 0 1px ${chartThemeColors.value.tooltipShadow}, 0 0 16px ${chartThemeColors.value.tooltipShadow}`,
   axisPointer: {
-    type: 'cross' as const,
+    type: showLossData.value ? 'line' as const : 'cross' as const,
     crossStyle: {
       color: chartThemeColors.value.textTertiary,
     },
@@ -740,7 +742,7 @@ const pingChartOption = computed(() => {
       textStyle: { fontSize: 11, color: chartThemeColors.value.textSecondary },
       data: taskList.map(t => t.name),
     },
-    grid: { ...chartMargin, bottom: showLossData.value ? 36 : chartMargin.bottom },
+    grid: chartMargin,
     xAxis: {
       type: 'category',
       data: data.map(d => formatTime(d.time as string, showDateInAxis.value)),
@@ -866,6 +868,7 @@ watch(() => props.uuid, () => {
 })
 
 onMounted(() => {
+  connect(chartGroup)
   syncTouchTooltipMode()
   coarsePointerMediaQuery = window.matchMedia('(pointer: coarse)')
   coarsePointerMediaQuery.addEventListener('change', syncTouchTooltipMode)
@@ -878,6 +881,7 @@ onMounted(() => {
 })
 
 onBeforeUnmount(() => {
+  disconnect(chartGroup)
   coarsePointerMediaQuery?.removeEventListener('change', syncTouchTooltipMode)
 })
 </script>
@@ -1103,10 +1107,10 @@ onBeforeUnmount(() => {
         <!-- 图表 -->
         <div class="rounded-md bg-background/50 p-4">
           <div class="h-72">
-            <VChart :option="pingChartOption" autoresize />
+            <VChart :option="pingChartOption" :group="chartGroup" autoresize />
           </div>
           <div v-if="showLossData" class="mt-2 h-72">
-            <VChart :option="pingLossChartOption" autoresize />
+            <VChart :option="pingLossChartOption" :group="chartGroup" autoresize />
           </div>
         </div>
       </template>
