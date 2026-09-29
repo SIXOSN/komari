@@ -42,7 +42,10 @@ let isPointerDown = false
 let lastPointerX = 0
 let lastPointerY = 0
 let staticRedrawUntil = 0
+let lastFrameAt = 0
 const labelElements = new Map<string, HTMLElement>()
+const FRAME_INTERVAL_MS = 30
+const ROTATION_BASE_FRAME_MS = 1000 / 60
 
 function normalizePhi(value: number): number {
   const circle = Math.PI * 2
@@ -125,9 +128,12 @@ function applyLabelStyles() {
     if (!element)
       continue
     const style = getClusterStyle(cluster.coord)
-    element.style.transform = style.transform
-    element.style.opacity = style.opacity
-    element.style.filter = style.filter
+    if (element.style.transform !== style.transform)
+      element.style.transform = style.transform
+    if (element.style.opacity !== style.opacity)
+      element.style.opacity = style.opacity
+    if (element.style.filter !== style.filter)
+      element.style.filter = style.filter
   }
 }
 
@@ -185,7 +191,7 @@ function getDevicePixelRatio(): number {
   if (typeof window === 'undefined')
     return 1
 
-  return Math.min(window.devicePixelRatio || 1, 2)
+  return Math.min(window.devicePixelRatio || 1, 1.5)
 }
 
 function buildInitialOptions(): COBEOptions {
@@ -199,7 +205,7 @@ function buildInitialOptions(): COBEOptions {
     theta,
     dark: colors.dark,
     diffuse: 0.5, // 从 2.2 降到 1.0，减少白色溢光
-    mapSamples: 16000, // 适中采样：点阵更稀疏，旋转时摩尔纹更轻（过高采样会加剧像素干涉）
+    mapSamples: 12000,
     mapBrightness: colors.mapBrightness,
     baseColor: colors.baseColor,
     markerColor: colors.markerColor,
@@ -222,10 +228,15 @@ const { pause: pauseRaf, resume: resumeRaf } = useRafFn(
   () => {
     if (!globe)
       return
+    const now = performance.now()
+    if (lastFrameAt && now - lastFrameAt < FRAME_INTERVAL_MS)
+      return
+    const elapsed = lastFrameAt ? Math.min(now - lastFrameAt, 100) : ROTATION_BASE_FRAME_MS
+    lastFrameAt = now
     const prevPhi = phi
     const prevTheta = theta
     if (!isPointerDown && shouldAutoRotate.value)
-      targetPhi += 0.0010
+      targetPhi += 0.0010 * elapsed / ROTATION_BASE_FRAME_MS
     phi += (targetPhi - phi) * 1
     theta += (targetTheta - theta) * 1
     if (
@@ -235,6 +246,9 @@ const { pause: pauseRaf, resume: resumeRaf } = useRafFn(
       if (!shouldAutoRotate.value && shouldKeepStaticRedraw()) {
         updateGlobeFrame()
         applyLabelStyles()
+      }
+      else if (!shouldAutoRotate.value) {
+        pauseRaf()
       }
       return
     }
@@ -256,12 +270,15 @@ function startGlobe() {
     updateGlobeFrame()
     applyLabelStyles()
   })
-  if (documentVisibility.value === 'visible')
+  if (shouldRender.value) {
+    lastFrameAt = 0
     resumeRaf()
+  }
 }
 
 async function stopGlobe() {
   pauseRaf()
+  lastFrameAt = 0
   await nextTick()
   globe?.destroy()
   globe = null
@@ -285,6 +302,7 @@ onMounted(() => {
 
 onBeforeUnmount(() => {
   pauseRaf()
+  lastFrameAt = 0
   globe?.destroy()
   globe = null
 })
@@ -302,6 +320,8 @@ watch(
       triggerStaticRedrawWindow(600)
     updateGlobeFrame()
     applyLabelStyles()
+    if (shouldRender.value && !shouldAutoRotate.value)
+      resumeRaf()
   },
 )
 
@@ -313,6 +333,10 @@ watch(
     triggerStaticRedrawWindow()
     updateGlobeFrame()
     applyLabelStyles()
+    if (shouldRender.value) {
+      lastFrameAt = 0
+      resumeRaf()
+    }
   },
 )
 
@@ -323,8 +347,11 @@ watch(
       return
     globe.update({ markers: markers.value })
     applyLabelStyles()
-    if (!shouldAutoRotate.value)
+    if (!shouldAutoRotate.value) {
       triggerStaticRedrawWindow(600)
+      if (shouldRender.value)
+        resumeRaf()
+    }
   },
 )
 
@@ -334,15 +361,21 @@ watch(shouldRender, (visible) => {
   if (visible) {
     if (!shouldAutoRotate.value)
       triggerStaticRedrawWindow()
+    lastFrameAt = 0
     resumeRaf()
   }
   else {
     pauseRaf()
+    lastFrameAt = 0
   }
 })
 
 function onPointerDown(e: PointerEvent) {
   isPointerDown = true
+  if (shouldRender.value) {
+    lastFrameAt = 0
+    resumeRaf()
+  }
   lastPointerX = e.clientX
   lastPointerY = e.clientY
   const target = e.currentTarget as HTMLElement
