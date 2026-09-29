@@ -37,6 +37,9 @@ let globeMaterial: MeshPhongMaterial | null = null
 let waterSpecularMap: Texture | null = null
 let loadingGlobe = false
 let destroyed = false
+let frameRequest = 0
+let lastFrameTime = 0
+const FRAME_INTERVAL = 1000 / 30
 
 interface GlobePoint {
   id: string
@@ -115,6 +118,35 @@ function resizeGlobe() {
     return
   const { width, height } = getRenderSize()
   globe.width(width).height(height)
+  globe.renderer().setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5))
+}
+
+function renderFrame(time: number) {
+  if (!globe || !shouldRender.value) {
+    frameRequest = 0
+    return
+  }
+
+  if (time - lastFrameTime >= FRAME_INTERVAL) {
+    globe.resumeAnimation()
+    globe.pauseAnimation()
+    lastFrameTime = time
+  }
+  frameRequest = requestAnimationFrame(renderFrame)
+}
+
+function startFrames() {
+  if (!globe || !shouldRender.value || frameRequest)
+    return
+  lastFrameTime = 0
+  frameRequest = requestAnimationFrame(renderFrame)
+}
+
+function stopFrames() {
+  if (frameRequest)
+    cancelAnimationFrame(frameRequest)
+  frameRequest = 0
+  globe?.pauseAnimation()
 }
 
 function resetPointOfView(transitionMs = 0) {
@@ -126,7 +158,7 @@ function applyControls() {
     return
   const controls = globe.controls()
   controls.autoRotate = shouldRender.value && !appStore.stopEarth
-  controls.autoRotateSpeed = 1.6
+  controls.autoRotateSpeed = 3.2
   controls.enableDamping = true
   controls.enableZoom = false
   controls.enablePan = false
@@ -211,6 +243,7 @@ async function startGlobe() {
       .htmlTransitionDuration(500)
 
     const renderer = globe.renderer()
+    renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5))
     renderer.setClearColor(0x000000, 0)
     renderer.domElement.style.background = 'transparent'
 
@@ -242,8 +275,8 @@ async function startGlobe() {
     applyMaterialStyle()
     applyControls()
     resetPointOfView(0)
-    if (!shouldRender.value)
-      globe.pauseAnimation()
+    globe.pauseAnimation()
+    startFrames()
   }
   finally {
     loadingGlobe = false
@@ -254,7 +287,7 @@ function stopGlobe() {
   if (!globe)
     return
 
-  globe.pauseAnimation()
+  stopFrames()
   globe._destructor()
   globe = null
   globeMaterial = null
@@ -303,12 +336,12 @@ watch(shouldRender, (visible) => {
   if (!globe)
     return
   if (visible) {
-    globe.resumeAnimation()
     applyControls()
     resizeGlobe()
+    startFrames()
     return
   }
-  globe.pauseAnimation()
+  stopFrames()
   applyControls()
 })
 </script>
