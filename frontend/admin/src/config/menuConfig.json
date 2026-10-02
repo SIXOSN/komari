@@ -56,28 +56,11 @@
           "labelKey": "loadAlert.title",
           "path": "/admin/notification/load",
           "icon": "TrendingUp"
-        }
-      ]
-    },
-    {
-      "labelKey": "plugin.title",
-      "path": "/admin/plugins",
-      "icon": "Blocks",
-      "children": [
-        {
-          "labelKey": "plugin.manage",
-          "path": "/admin/plugins",
-          "icon": "Blocks"
         },
         {
-          "labelKey": "plugin.market",
-          "path": "/admin/market/plugins",
-          "icon": "Store"
-        },
-        {
-          "labelKey": "plugin.config",
-          "path": "/admin/plugins/config",
-          "icon": "Settings2"
+          "labelKey": "trafficReport.title",
+          "path": "/admin/notification/traffic-report",
+          "icon": "BarChart2"
         }
       ]
     },

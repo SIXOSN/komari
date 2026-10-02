@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { Icon } from '@iconify/vue'
-import { nextTick, onMounted, onUnmounted, ref } from 'vue'
+import { usePreferredReducedMotion } from '@vueuse/core'
+import { computed, nextTick, onMounted, onUnmounted, ref } from 'vue'
 import { Alert, AlertAction, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Toaster } from '@/components/ui/sonner'
@@ -15,6 +16,8 @@ import LoadingCover from './components/LoadingCover.vue'
 import Provider from './components/Provider.vue'
 
 const appStore = useAppStore()
+const reducedMotion = usePreferredReducedMotion()
+const enableRouteAnimation = computed(() => !appStore.disablePageAnimation && reducedMotion.value !== 'reduce')
 useVisitorPageAudit()
 useTrafficCycle()
 
@@ -93,17 +96,14 @@ onUnmounted(() => {
             </Alert>
           </div>
           <div class="max-w-[1280px] mx-auto">
-            <RouterView v-slot="{ Component }">
+            <RouterView v-slot="{ Component, route }">
               <Transition
-                :css="!appStore.disablePageAnimation"
-                enter-active-class="transition-all duration-300 ease-out"
-                enter-from-class="opacity-0 translate-y-2" enter-to-class="opacity-100 translate-y-0"
-                leave-active-class="transition-opacity duration-150 ease-in" leave-from-class="opacity-100"
-                leave-to-class="opacity-0"
-                :mode="appStore.disablePageAnimation ? 'default' : 'out-in'"
+                :name="route.name === 'instance-detail' ? 'detail-navigation' : 'home-navigation'"
+                :css="enableRouteAnimation"
+                :mode="enableRouteAnimation ? 'out-in' : 'default'"
               >
                 <KeepAlive :include="['HomeView']">
-                  <component :is="Component" />
+                  <component :is="Component" :key="route.path" />
                 </KeepAlive>
               </Transition>
             </RouterView>
@@ -115,3 +115,45 @@ onUnmounted(() => {
     <Toaster rich-colors close-button position="top-center" />
   </Provider>
 </template>
+
+<style scoped>
+.detail-navigation-enter-active,
+.home-navigation-enter-active {
+  transition: opacity 240ms ease-out, transform 280ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.detail-navigation-leave-active,
+.home-navigation-leave-active {
+  transition: opacity 120ms ease-in, transform 120ms ease-in;
+  pointer-events: none;
+}
+
+.detail-navigation-enter-from {
+  opacity: 0;
+  transform: translate3d(20px, 0, 0);
+}
+
+.detail-navigation-leave-to {
+  opacity: 0;
+  transform: translate3d(-10px, 0, 0);
+}
+
+.home-navigation-enter-from {
+  opacity: 0;
+  transform: translate3d(-20px, 0, 0);
+}
+
+.home-navigation-leave-to {
+  opacity: 0;
+  transform: translate3d(10px, 0, 0);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .detail-navigation-enter-active,
+  .detail-navigation-leave-active,
+  .home-navigation-enter-active,
+  .home-navigation-leave-active {
+    transition: none;
+  }
+}
+</style>

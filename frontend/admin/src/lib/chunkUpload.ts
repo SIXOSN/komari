@@ -2,7 +2,7 @@ export const CHUNK_SIZE = 5 * 1024 * 1024;
 const WORKER_COUNT = 5;
 const MAX_ATTEMPTS = 4;
 
-export type UploadPurpose = "backup" | "plugin" | "theme";
+export type UploadPurpose = "backup" | "theme";
 
 type InitResponse = {
   status?: string;
