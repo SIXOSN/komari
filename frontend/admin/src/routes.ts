@@ -20,10 +20,6 @@ export const routes: RouteObject[] = [
         path: "instance/:uuid",
         element: React.createElement(lazy(() => import("./pages/instance"))),
       },
-      {
-        path: "plugin/:short/*",
-        element: React.createElement(lazy(() => import("./pages/plugin_page"))),
-      },
     ],
   },
   {
@@ -68,30 +64,6 @@ export const routes: RouteObject[] = [
           to: "/admin/settings/page",
           replace: true,
         }),
-      },
-      {
-        path: "plugins",
-        element: React.createElement(
-          lazy(() => import("./pages/admin/plugins"))
-        ),
-      },
-      {
-        path: "plugins/config",
-        element: React.createElement(
-          lazy(() => import("./pages/admin/plugin_config"))
-        ),
-      },
-      {
-        path: "plugin-page",
-        element: React.createElement(
-          lazy(() => import("./pages/admin/plugin_page"))
-        ),
-      },
-      {
-        path: "market/plugins",
-        element: React.createElement(
-          lazy(() => import("./pages/admin/market/plugins"))
-        ),
       },
       {
         path: "sessions",
@@ -174,6 +146,10 @@ export const routes: RouteObject[] = [
         path: "notification",
         children: [
           {
+            path: "traffic-report",
+            element: React.createElement(lazy(() => import("./pages/admin/notification/traffic-report"))),
+          },
+          {
             index: true,
             element: React.createElement(Navigate, {
               to: "/admin/notification/channels",
@@ -231,6 +207,10 @@ export const routes: RouteObject[] = [
       {
         path: "logs",
         element: React.createElement(lazy(() => import("./pages/admin/log"))),
+      },
+      {
+        path: "logs/traffic-report",
+        element: React.createElement(lazy(() => import("./pages/admin/log")), { msgType: "traffic-report" }),
       },
       {
         path: "pprof",

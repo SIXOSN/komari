@@ -22,21 +22,26 @@ interface Log {
   msg_type: string;
   time: string;
 }
-const LogPage = () => {
+const LogPage = ({ msgType }: { msgType?: string }) => {
   const [loading, setLoading] = React.useState<boolean>(true);
   const [logs, setLogs] = React.useState<Log[]>([]);
   const [error, setError] = React.useState<string | null>(null);
   const [page, setPage] = React.useState<number>(1);
   const [total, setTotal] = React.useState<number>(1);
   const [limit, setLimit] = React.useState<number>(10);
+  const [refresh, setRefresh] = React.useState(0);
   const [t] = useTranslation();
   const navigate = useNavigate();
+  React.useEffect(() => { setPage(1); }, [msgType]);
   React.useEffect(() => {
+    const controller = new AbortController();
     const fetchLogs = async () => {
       setLoading(true);
+      setError(null);
       try {
         const response = await fetch(
-          `/api/admin/logs?limit=${limit}&page=${page}`
+          `/api/admin/logs?limit=${limit}&page=${page}${msgType ? `&msg_type=${encodeURIComponent(msgType)}` : ""}`,
+          { signal: controller.signal }
         );
         if (!response.ok) {
           throw new Error("Failed to fetch logs");
@@ -45,13 +50,15 @@ const LogPage = () => {
         setLogs(data.data.logs);
         setTotal(data.data.total);
       } catch (err) {
+        if (controller.signal.aborted) return;
         setError(err instanceof Error ? err.message : "Unknown error");
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) setLoading(false);
       }
     };
     fetchLogs();
-  }, [page]);
+    return () => controller.abort();
+  }, [page, limit, msgType, refresh]);
 
   const totalPages = Math.ceil(total / limit);
   // 计算分页页码，显示当前页及前后1页，两端省略号
@@ -92,8 +99,12 @@ const LogPage = () => {
   return (
     <div className="km-page-admin-log flex flex-col gap-2 p-4">
       <div className="km-log-toolbar flex justify-between items-center">
-        <h1 className="text-2xl font-bold">{t("logs.title")}</h1>
+        <h1 className="text-2xl font-bold">{msgType ? t("trafficReport.logs", "流量报告日志") : t("logs.title")}</h1>
         <div className="flex items-center gap-2">
+          <Button variant="soft" onClick={() => navigate(msgType ? "/admin/logs" : "/admin/logs/traffic-report")}>
+            {msgType ? t("logs.title") : t("trafficReport.title", "流量报告")}
+          </Button>
+          <Button variant="soft" onClick={() => setRefresh((value) => value + 1)}>{t("common.refresh", "刷新")}</Button>
           <Button variant="soft" onClick={() => navigate("/admin/pprof")}>
             <Activity size={16} />
             {t("pprof.title")}

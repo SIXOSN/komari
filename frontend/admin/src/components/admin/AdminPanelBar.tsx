@@ -8,7 +8,7 @@ import {
   Text,
 } from "@radix-ui/themes";
 import { AnimatePresence, motion } from "framer-motion"; // 引入 Framer Motion
-import { useEffect, useMemo, useState, type ReactNode } from "react";
+import { useEffect, useState, type ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { Link, useLocation /*useNavigate*/ } from "react-router-dom";
 import ColorSwitch from "../ColorSwitch";
@@ -17,22 +17,16 @@ import ThemeSwitch from "../ThemeSwitch";
 import { useIsMobile } from "@/hooks/use-mobile";
 import menuConfig from "../../config/menuConfig.json";
 import type { MenuItem } from "../../types/menu";
-import { iconMap, resolvePluginIcon } from "../../utils/iconHelper";
+import { iconMap } from "../../utils/iconHelper";
 import { ChevronDownIcon } from "@radix-ui/react-icons";
 import { TablerMenu2 } from "../Icones/Tabler";
 import LoginDialog from "../Login";
 import InlineSvgIcon from "../InlineSvgIcon";
-import { useAdminNavigation } from "@/contexts/AdminNavigationContext";
 import { useAccount } from "@/contexts/AccountContext";
 import { usePublicInfo } from "@/contexts/PublicInfoContext";
 import Tips from "../ui/tips";
 import { CircleFadingArrowUp } from "lucide-react";
 import { useRPC2Call } from "@/contexts/RPC2Context";
-import { resolveI18nText } from "@/utils/i18nText";
-import type { PluginInfo } from "@/types/plugin";
-import {
-  normalizeThemeRedirectTarget,
-} from "@/utils/themeConfiguration";
 
 // 将JSON配置转换为类型安全的菜单项数组 (基础静态菜单)
 const baseMenuItems = (menuConfig as { menu: MenuItem[] }).menu;
@@ -56,23 +50,18 @@ const AdminPanelBar = ({ content }: AdminPanelBarProps) => {
   const { account } = useAccount();
   const isMobile = useIsMobile();
   const ishttps = window.location.protocol === "https:";
-  const [t, i18n] = useTranslation();
+  const [t] = useTranslation();
   const location = useLocation();
   const isConfigFormPage =
     location.pathname === "/admin/settings/page" ||
-    location.pathname === "/admin/plugins/config";
+    location.pathname === "/admin/notification/traffic-report";
   const { publicInfo } = usePublicInfo();
-  const { refreshVersion } = useAdminNavigation();
   //const navigate = useNavigate();
   // 获取版本信息
   const [versionInfo, setVersionInfo] = useState<{
     hash: string;
     version: string;
   } | null>(null);
-  const currentLanguage =
-    i18n.resolvedLanguage ||
-    i18n.language ||
-    (typeof navigator !== "undefined" ? navigator.language : "");
   // GitHub 最新发布信息与更新检测
   interface GithubReleaseInfo {
     tag_name: string;
@@ -89,61 +78,6 @@ const AdminPanelBar = ({ content }: AdminPanelBarProps) => {
   const [updateAvailable, setUpdateAvailable] = useState(false);
   const [releasesSince, setReleasesSince] = useState<GithubReleaseInfo[]>([]);
 
-
-  // 动态扩展菜单（主题 + 插件注入页面）
-  const [pluginMenuItems, setPluginMenuItems] = useState<ExtendedMenuItem[]>([]);
-
-  // 插件注入的管理页面：manifest pages（visibility=admin）-> 插件菜单的二级菜单。
-  // iframe 页面进入 plugin-page 路由；redirect 页面复用主题的站内跳转校验。
-  useEffect(() => {
-    let ignore = false;
-    async function loadPluginMenu() {
-      try {
-        const result = await call<any, PluginInfo[]>("admin:listPlugins");
-        if (ignore || !Array.isArray(result)) return;
-        const pluginIconUrl = (plugin: PluginInfo, icon?: string) =>
-          resolvePluginIcon(plugin.short, icon) || "Blocks";
-        const items: ExtendedMenuItem[] = [];
-        for (const plugin of result) {
-          if (!plugin.enabled) continue; // 未启用的插件不注入导航菜单
-          for (const page of plugin.pages || []) {
-            if (page.visibility === "public") continue; // 公开页面走公开路由，不进后台导航
-            const label =
-              resolveI18nText(page.title, currentLanguage) ||
-              resolveI18nText(plugin.name, currentLanguage) ||
-              plugin.short;
-            const pageType = page.type || "iframe";
-            if (pageType === "redirect") {
-              const target = normalizeThemeRedirectTarget(page.url);
-              if (!target) continue;
-              items.push({
-                labelKey: label,
-                rawLabel: label,
-                path: target,
-                icon: pluginIconUrl(plugin, page.icon),
-                reloadDocument: true, // 与主题 redirect 一致：整页跳转到站内路径
-              });
-              continue;
-            }
-            items.push({
-              labelKey: label,
-              rawLabel: label,
-              path: `/admin/plugin-page?short=${encodeURIComponent(plugin.short)}&file=${encodeURIComponent(page.file || "")}`,
-              icon: pluginIconUrl(plugin, page.icon),
-            });
-          }
-        }
-        if (!ignore) setPluginMenuItems(items);
-      } catch (e) {
-        console.warn("加载插件菜单失败:", e);
-        if (!ignore) setPluginMenuItems([]);
-      }
-    }
-    loadPluginMenu();
-    return () => {
-      ignore = true;
-    };
-  }, [call, currentLanguage, refreshVersion]);
 
   useEffect(() => {
     const fetchVersionInfo = async () => {
@@ -233,24 +167,12 @@ const AdminPanelBar = ({ content }: AdminPanelBarProps) => {
     return () => window.removeEventListener("resize", handleResize);
   }, [isMobile]);
 
-  // 主题配置和插件注入页面分别作为“主题”“插件”主菜单的二级菜单。
-  const mergedBaseMenuItems: ExtendedMenuItem[] = useMemo(() => {
-    return baseMenuItems.map((item) => {
-      if (item.labelKey === "plugin.title" && pluginMenuItems.length > 0) {
-        return {
-          ...item,
-          children: [...(item.children || []), ...pluginMenuItems],
-        };
-      }
-      return item;
-    });
-  }, [pluginMenuItems]);
+  const mergedBaseMenuItems: ExtendedMenuItem[] = baseMenuItems;
   const bottomStartPath = mergedBaseMenuItems.find(
     (item) => item.bottom,
   )?.path;
 
-  // 根据路径自动展开子菜单（包含动态扩展项；plugin-page 用 query 定位文件，
-  // 因此子菜单匹配基于 pathname 部分）
+  // 根据页面路径自动展开所属子菜单。
   useEffect(() => {
     const newState: { [key: string]: boolean } = {};
     const combined: ExtendedMenuItem[] = mergedBaseMenuItems;
@@ -758,15 +680,13 @@ const SidebarItem = ({
 }) => {
   const location = useLocation();
   const isExternalLink = to.startsWith("http://") || to.startsWith("https://");
-  // 带 query 的菜单项（如 /admin/plugin-page?short=x）做全匹配；不带 query
-  // 的菜单项只比 pathname（如 /admin/plugins/config?short=x 点亮“插件配置”），
-  // 同时避免前缀兄弟路由（/admin/plugins 与 /admin/plugins/config）同时点亮。
+  // 带 query 的菜单项做全匹配；其它菜单项只匹配 pathname，避免前缀相同的兄弟页面同时点亮。
   const isActive =
     !isExternalLink &&
     to !== "/" &&
     (to.includes("?")
       ? location.pathname + location.search === to
-      : location.pathname === to.split("?")[0]);
+      : location.pathname === to.split("?")[0] || (to === "/admin/logs" && location.pathname.startsWith("/admin/logs/")));
   const openInNewTab = newTab === true || (isExternalLink && newTab !== false);
 
   if (openInNewTab || reloadDocument) {

@@ -9,7 +9,10 @@ import { VitePWA } from "vite-plugin-pwa";
 import type { Plugin, UserConfig } from "vite";
 import * as fs from "fs";
 import * as path from "path";
+import { fileURLToPath } from "node:url";
 import dotenv from "dotenv";
+
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 function localKomariThemePlugin(): Plugin {
   const themeRequestPath = "/themes/default/komari-theme.json";
