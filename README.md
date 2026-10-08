@@ -41,6 +41,19 @@ docker run -d \
 
 Back up the mounted data directory before replacing an existing container.
 
+## Linux script installation and upgrades
+
+Run as root on a Linux server:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/SIXOSN/komari/main/install-komari.sh -o /tmp/install-komari.sh
+bash /tmp/install-komari.sh
+```
+
+The script installs only SIXOSN/komari, supports stable and snapshot releases, and installs the required curl and jq dependencies. The default binary is `/opt/komari/komari`, local data lives in `/opt/komari/data`, and the systemd service is named `komari`. Running the script again opens the management menu for an existing installation.
+
+Upgrades download and validate the new file before stopping the service and backing up the old binary and local data. A failed startup triggers a recovery attempt. Backups remain until explicit cleanup; failed-version data is kept in `data.failed.*`. Local backups do not include external MySQL/PostgreSQL metric databases. Upgrade Docker deployments by updating their image.
+
 ## Agent installation
 
 Create or select a node in the administration panel, then follow the installation guidance shown there. Installation commands, credentials, and compatibility details are intentionally not published in this README.

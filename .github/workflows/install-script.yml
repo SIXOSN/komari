@@ -1,0 +1,24 @@
+name: Test installer
+
+on:
+  push:
+    branches: [main]
+    paths: ['install-komari.sh', 'tests/install-komari-test.sh', '.github/workflows/install-script.yml']
+  pull_request:
+    paths: ['install-komari.sh', 'tests/install-komari-test.sh', '.github/workflows/install-script.yml']
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  installer:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - name: Check Bash syntax
+        run: |
+          bash -n install-komari.sh
+          bash -n tests/install-komari-test.sh
+      - name: Test installation and upgrade failure recovery
+        run: bash tests/install-komari-test.sh

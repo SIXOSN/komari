@@ -41,6 +41,19 @@ docker run -d \
 
 替换现有容器前，请先备份挂载的数据目录。
 
+## Linux 脚本安装与升级
+
+在 Linux 服务器上以 root 身份运行：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/SIXOSN/komari/main/install-komari.sh -o /tmp/install-komari.sh
+bash /tmp/install-komari.sh
+```
+
+脚本仅安装 SIXOSN/komari，支持正式版和快照版，自动安装 curl、jq 依赖。默认程序位于 `/opt/komari/komari`，本地数据位于 `/opt/komari/data`，systemd 服务名为 `komari`。已有安装再次运行脚本会打开管理菜单。
+
+升级先下载并校验新文件，再停止服务、备份旧程序及本地数据；启动失败时尝试恢复。旧备份保留至手动清理，失败版本的数据保留在 `data.failed.*`。本地备份不包含外部 MySQL/PostgreSQL 指标数据库。Docker 部署通过更新镜像升级。
+
 ## Agent 安装
 
 请在管理面板中创建或选择节点，并按照面板内显示的安装指引操作。本 README 不公开安装命令、凭据或兼容性实现细节。

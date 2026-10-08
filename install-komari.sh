@@ -56,13 +56,9 @@ BACKUP_DIR="$INSTALL_DIR/backup"
 DATA_BACKUP_DIR="$DATA_DIR/data/backup"
 DEFAULT_PORT="25774"
 LISTEN_PORT=""
-STANDARD_REPO="komari-monitor/komari"
-LITE_REPO="nuomiiiii/komari"
-REPO="$STANDARD_REPO"
-# 发行版本: standard（标准版）或 lite（Lite 轻量版）
-EDITION="standard"
-EDITION_NAME=""
-# 发布通道: stable（稳定版）或 snapshot（快照版）；Lite 仅支持 stable
+readonly REPO="SIXOSN/komari"
+DISTRIBUTION_NAME="SIXOSN Komari"
+# 发布通道: stable（正式版）或 snapshot（快照版）。
 CHANNEL="stable"
 CHANNEL_NAME=""
 # 语言: en（English）或 zh（简体中文）
@@ -127,9 +123,9 @@ msg() {
             en_text='Uninstallation complete'
             zh_text='卸载完成'
             ;;
-        sponsor_info)
-            en_text='Sponsors:\n  AxisNow: Self-hosted private CDN with a flexible, modular network.\n  Dream Cloud: Cost-effective Asia-Pacific hosting with direct connectivity and DDoS protection.\n  Sharon Networks: China-optimized connectivity with low latency, high bandwidth, and Tbps-scale DDoS mitigation.'
-            zh_text='赞助商：\n  AxisNow：自建私有部署 CDN，订阅式高仿 CDN，自主可控、灵活组合的 CDN 网络。\n  Dream Cloud：高性价比直连亚太高防，真高防，不虚标，打死退款。\n  Sharon Networks：亚太数据中心提供中国优化网络，低延时、高带宽，并提供 Tbps 级本地清洗高防。'
+        distribution_info)
+            en_text='SIXOSN Komari only accepts SIXOSN/komari-agent. Install the matching agent using the administration panel.'
+            zh_text='SIXOSN Komari 仅接受 SIXOSN/komari-agent，请在管理面板中使用配套 Agent 的安装指引。'
             ;;
         language_prompt)
             en_text='Select language / 请选择语言:'
@@ -146,30 +142,6 @@ msg() {
         root_required)
             en_text='Please run this script as root.'
             zh_text='请使用 root 权限运行此脚本。'
-            ;;
-        edition_title)
-            en_text='Choose an edition'
-            zh_text='选择安装版本'
-            ;;
-        edition_prompt)
-            en_text='Komari has multiple editions with different features and performance profiles. Choose the one that fits your controller.\n\nChoose the edition to install [default 1]:'
-            zh_text='Komari 目前提供多个版本，不同版本在功能和性能上有所差异，请根据主控配置选择。\n\n请选择安装的版本（默认 1）：'
-            ;;
-        edition_standard)
-            en_text='Standard edition'
-            zh_text='标准版本'
-            ;;
-        edition_lite)
-            en_text='Lite edition - optimized for low-resource controllers with a streamlined feature set (maintained by @nuomiiiii)'
-            zh_text='Lite 版本 - 改善低配置主控下的性能，精简复杂功能（由 @nuomiiiii 维护）'
-            ;;
-        edition_name_standard)
-            en_text='Komari Standard'
-            zh_text='Komari 标准版'
-            ;;
-        edition_name_lite)
-            en_text='Komari Lite'
-            zh_text='Komari Lite 轻量版'
             ;;
         selected_edition)
             en_text='Selected edition: %s'
@@ -202,14 +174,6 @@ msg() {
         selected_channel)
             en_text='Selected channel: %s'
             zh_text='已选择通道：%s'
-            ;;
-        progress_edition_standard)
-            en_text='Standard edition'
-            zh_text='标准版'
-            ;;
-        progress_edition_lite)
-            en_text='Lite edition'
-            zh_text='Lite 版本'
             ;;
         progress_download)
             en_text='Download Komari'
@@ -256,20 +220,48 @@ msg() {
             zh_text='检查并安装依赖...'
             ;;
         dependencies_apt)
-            en_text='Installing dependencies with apt...'
-            zh_text='使用 apt 安装依赖...'
+            en_text='Installing curl and jq with apt...'
+            zh_text='使用 apt 安装 curl 和 jq...'
             ;;
         dependencies_yum)
-            en_text='Installing dependencies with yum...'
-            zh_text='使用 yum 安装依赖...'
+            en_text='Installing curl and jq with yum...'
+            zh_text='使用 yum 安装 curl 和 jq...'
             ;;
         dependencies_apk)
-            en_text='Installing dependencies with apk...'
-            zh_text='使用 apk 安装依赖...'
+            en_text='Installing curl and jq with apk...'
+            zh_text='使用 apk 安装 curl 和 jq...'
             ;;
         unsupported_package_manager)
             en_text='No supported package manager found (apt/yum/apk).'
             zh_text='未找到支持的包管理器（apt/yum/apk）。'
+            ;;
+        dependencies_failed)
+            en_text='Failed to install the required curl and jq dependencies.'
+            zh_text='安装必需的 curl 和 jq 依赖失败。'
+            ;;
+        linux_required)
+            en_text='This installer only supports Linux.'
+            zh_text='此安装脚本仅支持 Linux。'
+            ;;
+        operation_failed)
+            en_text='Operation failed. No successful installation or upgrade was reported. Check the service logs and retained backups.'
+            zh_text='操作失败，未完成安装或升级。请检查服务日志及保留的备份。'
+            ;;
+        invalid_binary)
+            en_text='The downloaded file is empty or is not a Linux ELF executable.'
+            zh_text='下载文件为空或不是 Linux ELF 可执行文件。'
+            ;;
+        backing_up_data)
+            en_text='Backing up local data before starting the new version...'
+            zh_text='启动新版本前备份本地数据...'
+            ;;
+        rollback_success)
+            en_text='The new version failed to start. The previous binary and local data were restored. Any data created by the failed version was kept in data.failed.*. External metric databases are not included in the local backup.'
+            zh_text='新版本启动失败，已恢复旧程序及本地数据。失败版本产生的数据保留在 data.failed.* 中。本地备份不包含外部指标数据库。'
+            ;;
+        rollback_failed)
+            en_text='Automatic recovery failed. Binary and local-data backups were kept in %s. Check journalctl and restore manually.'
+            zh_text='自动恢复失败。程序及本地数据备份保留在 %s，请检查 journalctl 日志并手动恢复。'
             ;;
         unsupported_arch)
             en_text='Unsupported architecture: %s'
@@ -328,8 +320,8 @@ msg() {
             zh_text='%s 二进制文件安装完成：%s'
             ;;
         no_systemd_manual)
-            en_text='Warning: systemd was not found, so the service was not created.\n\nYou can start %s manually:\n    %s server -l 0.0.0.0:%s'
-            zh_text='警告：未检测到 systemd，已跳过服务创建。\n\n您可以手动运行 %s：\n    %s server -l 0.0.0.0:%s'
+            en_text='systemd was not found, so the service was not created.\n\nYou can start %s manually:\n    cd %s && %s server -l 0.0.0.0:%s'
+            zh_text='未检测到 systemd，已跳过服务创建。\n\n您可以手动运行 %s：\n    cd %s && %s server -l 0.0.0.0:%s'
             ;;
         service_started)
             en_text='Komari service started successfully.'
@@ -352,8 +344,8 @@ msg() {
             zh_text='访问地址：\n  http://%s:%s\n\n请在浏览器中创建管理员账号。\n\n服务管理命令：\n  状态：systemctl status %s\n  启动：systemctl start %s\n  停止：systemctl stop %s\n  重启：systemctl restart %s\n  日志：journalctl -u %s -f'
             ;;
         cleanup_confirm)
-            en_text='This will delete Komari binary upgrade backups and data upgrade archives.\n\nContinue?'
-            zh_text='将删除 Komari 的二进制升级备份和数据升级压缩包。\n\n确定继续吗？'
+            en_text='This will delete Komari binary upgrade backups and data upgrade archives. Failed-version data directories will be kept.\n\nContinue?'
+            zh_text='将删除 Komari 的二进制升级备份和数据升级压缩包。失败版本的数据目录会保留。\n\n确定继续吗？'
             ;;
         cleanup_cancelled)
             en_text='Backup cleanup cancelled.'
@@ -383,10 +375,6 @@ msg() {
             en_text='Stopping Komari service...'
             zh_text='停止 Komari 服务...'
             ;;
-        clearing_backups)
-            en_text='Removing old binary backups...'
-            zh_text='清理旧的二进制备份...'
-            ;;
         backing_up)
             en_text='Backing up the current binary...'
             zh_text='备份当前二进制文件...'
@@ -399,33 +387,13 @@ msg() {
             en_text='The current version could not be backed up. Upgrade cancelled.'
             zh_text='备份当前版本失败，升级已取消。'
             ;;
-        download_url_failed_log)
-            en_text='Failed to get the download URL. Restoring the backup.'
-            zh_text='获取下载链接失败，正在从备份恢复。'
-            ;;
-        download_url_failed_restore)
-            en_text='Failed to get the download URL. The backup was restored.'
-            zh_text='获取下载链接失败，已从备份恢复。'
-            ;;
         downloading_latest)
             en_text='Downloading the latest %s...'
             zh_text='下载最新 %s...'
             ;;
-        download_failed_log)
-            en_text='Download failed. Restoring the backup.'
-            zh_text='下载失败，正在从备份恢复。'
-            ;;
-        download_failed_restore)
-            en_text='Download failed. The backup was restored.'
-            zh_text='下载失败，已从备份恢复。'
-            ;;
         upgrade_success)
             en_text='Version: %s\nChannel: %s'
             zh_text='版本：%s\n通道：%s'
-            ;;
-        upgrade_start_failed)
-            en_text='The service failed to start after the upgrade. Check the logs.'
-            zh_text='服务在升级后未能启动，请检查日志。'
             ;;
         uninstall_start)
             en_text='Uninstalling Komari...'
@@ -492,8 +460,8 @@ msg() {
             zh_text='服务当前已停止。'
             ;;
         main_title)
-            en_text='Komari management menu'
-            zh_text='Komari 管理菜单'
+            en_text='SIXOSN Komari management menu'
+            zh_text='SIXOSN Komari 管理菜单'
             ;;
         main_prompt)
             en_text='Select an action:'
@@ -782,53 +750,21 @@ ASCII_ART
 }
 
 
-# 设置发行版本，结果写入全局变量 EDITION / REPO。
-select_edition() {
-    local choice
-    choice=$(ui_menu "$(msg edition_title)" "$(msg edition_prompt)" \
-        "1" "$(msg edition_standard)" \
-        "2" "$(msg edition_lite)")
-
-    case "$choice" in
-        lite|2)
-            EDITION="lite"
-            EDITION_NAME="$(msg edition_name_lite)"
-            REPO="$LITE_REPO"
-            ;;
-        standard|1|"")
-            EDITION="standard"
-            EDITION_NAME="$(msg edition_name_standard)"
-            REPO="$STANDARD_REPO"
-            ;;
-        *)
-            EDITION="standard"
-            EDITION_NAME="$(msg edition_name_standard)"
-            REPO="$STANDARD_REPO"
-            ;;
-    esac
-    if [ "$EDITION" = "lite" ]; then
-        progress_add "$(msg progress_edition_lite)"
-    else
-        progress_add "$(msg progress_edition_standard)"
-    fi
-    log_info "$(msg selected_edition "$EDITION_NAME")"
+# 此脚本仅管理 SIXOSN 发行版。
+show_distribution() {
+    progress_add "$DISTRIBUTION_NAME"
+    log_info "$(msg selected_edition "$DISTRIBUTION_NAME")"
 }
 
 # 设置发布通道，结果写入全局变量 CHANNEL。
 select_channel() {
     local choice
 
-    if [ "$EDITION" = "lite" ]; then
-        CHANNEL="stable"
-        CHANNEL_NAME="$(msg channel_name_stable)"
-        progress_add "$CHANNEL_NAME"
-        log_info "$(msg selected_channel "$CHANNEL_NAME")"
-        return 0
-    fi
-
-    choice=$(ui_menu "$(msg channel_title)" "$(msg channel_prompt)" \
+    if ! choice=$(ui_menu "$(msg channel_title)" "$(msg channel_prompt)" \
         "1" "$(msg channel_stable)" \
-        "2" "$(msg channel_snapshot)")
+        "2" "$(msg channel_snapshot)"); then
+        return 1
+    fi
 
     case "$choice" in
         snapshot|2)
@@ -871,7 +807,12 @@ check_systemd() {
 
 # Detect system architecture
 detect_arch() {
-    local arch=$(uname -m)
+    if [ "$(uname -s)" != "Linux" ]; then
+        log_error "$(msg linux_required)" >&2
+        return 1
+    fi
+    local arch
+    arch=$(uname -m) || return 1
     case $arch in
         x86_64)
             echo "amd64"
@@ -889,15 +830,15 @@ detect_arch() {
             echo "loong64"
             ;;
         *)
-            log_error "$(msg unsupported_arch "$arch")"
-            exit 1
+            log_error "$(msg unsupported_arch "$arch")" >&2
+            return 1
             ;;
     esac
 }
 
 # Check if Komari is already installed
 is_installed() {
-    if [ -f "$BINARY_PATH" ]; then
+    if [ -s "$BINARY_PATH" ] && [ -x "$BINARY_PATH" ]; then
         return 0 # 0 means true in bash exit codes
     else
         return 1 # 1 means false
@@ -908,22 +849,22 @@ is_installed() {
 install_dependencies() {
     log_step "$(msg dependencies_start)"
 
-    if ! command -v curl >/dev/null 2>&1; then
+    if ! command -v curl >/dev/null 2>&1 || ! command -v jq >/dev/null 2>&1; then
         if command -v apt >/dev/null 2>&1; then
             log_info "$(msg dependencies_apt)"
-            apt update
-            apt install -y curl
+            apt update && apt install -y curl jq || return 1
         elif command -v yum >/dev/null 2>&1; then
             log_info "$(msg dependencies_yum)"
-            yum install -y curl
+            yum install -y curl jq || return 1
         elif command -v apk >/dev/null 2>&1; then
             log_info "$(msg dependencies_apk)"
-            apk add curl
+            apk add curl jq || return 1
         else
             log_error "$(msg unsupported_package_manager)"
-            exit 1
+            return 1
         fi
     fi
+    command -v curl >/dev/null 2>&1 && command -v jq >/dev/null 2>&1
 }
 
 # Get download URL based on channel
@@ -931,27 +872,34 @@ get_download_url() {
     local arch=$1
     local file_name="komari-linux-${arch}"
 
-    # Lite 仓库没有 snapshot 发布，始终使用正式版下载地址。
-    if [ "$EDITION" = "lite" ]; then
-        CHANNEL="stable"
-    fi
-
+    local release_json tag
     if [ "$CHANNEL" = "snapshot" ]; then
-        # 获取最新的 snapshot 预发布版本
         log_info "$(msg fetch_snapshot)" >&2
-        local latest_snapshot=$(curl -s "https://api.github.com/repos/${REPO}/releases" | grep '"tag_name"' | grep 'Snapshot-' | head -1 | sed -e 's/.*"tag_name": *"//' -e 's/".*//')
-
-        if [ -z "$latest_snapshot" ]; then
+        release_json=$(curl -fsSL --connect-timeout 15 --max-time 60 --retry 2 \
+            "https://api.github.com/repos/${REPO}/releases?per_page=100") || return 1
+        # 选择最新的、已发布所需架构文件的 SIXOSN 快照。
+        release_json=$(printf '%s' "$release_json" | jq -ce --arg file "$file_name" '
+            [.[] | select(.draft == false and .prerelease == true)
+             | select(.tag_name | test("^Snapshot-[0-9]{10}$"))
+             | select(any(.assets[]?; .name == $file and .state == "uploaded"))][0] // empty
+        ') || {
             log_error "$(msg snapshot_not_found)" >&2
             return 1
-        fi
-
-        log_info "$(msg snapshot_found "$latest_snapshot")" >&2
-        echo "https://github.com/${REPO}/releases/download/${latest_snapshot}/${file_name}"
+        }
     else
-        # 稳定版：使用 latest
-        echo "https://github.com/${REPO}/releases/latest/download/${file_name}"
+        release_json=$(curl -fsSL --connect-timeout 15 --max-time 60 --retry 2 \
+            "https://api.github.com/repos/${REPO}/releases/latest") || return 1
     fi
+
+    tag=$(printf '%s' "$release_json" | jq -er --arg file "$file_name" '
+        select(.draft == false) | select(any(.assets[]?; .name == $file and .state == "uploaded")) | .tag_name
+    ') || return 1
+    [[ "$tag" =~ ^[a-zA-Z0-9][a-zA-Z0-9._-]*$ ]] || return 1
+    if [ "$CHANNEL" = "snapshot" ]; then
+        log_info "$(msg snapshot_found "$tag")" >&2
+    fi
+    # 固定到查询得到的 tag，避免 latest 在下载期间变化。
+    printf 'https://github.com/%s/releases/download/%s/%s\n' "$REPO" "$tag" "$file_name"
 }
 
 # Format bytes with a compact, human-readable unit.
@@ -1060,7 +1008,7 @@ print_download_progress() {
 }
 
 # Download silently with curl while the shell owns the visible progress line.
-download_file() {
+download_file() (
     local url="$1"
     local target="$2"
     local label="$3"
@@ -1070,26 +1018,62 @@ download_file() {
         total_bytes=0
     fi
 
-    : > "$target" || return 1
-    curl -fsSL -o "$target" "$url" &
-    local download_pid=$!
+    # 同目录临时文件：失败/中断不会清空原文件，成功后原子替换。
+    local temp_path download_pid=""
+    temp_path=$(mktemp "${target}.download.XXXXXX") || return 1
+    cleanup_download() {
+        if [ -n "$download_pid" ]; then
+            kill "$download_pid" 2>/dev/null || true
+            wait "$download_pid" 2>/dev/null || true
+        fi
+        rm -f -- "$temp_path"
+    }
+    trap cleanup_download EXIT
+    trap 'exit 130' INT
+    trap 'exit 143' TERM
+    curl -fsSL --connect-timeout 15 --max-time 900 --retry 2 --retry-delay 2 \
+        -o "$temp_path" "$url" &
+    download_pid=$!
     local downloaded_bytes=0
 
     while kill -0 "$download_pid" 2>/dev/null; do
-        if [ -f "$target" ]; then
-            downloaded_bytes=$(stat -c '%s' "$target" 2>/dev/null || printf '0')
+        if [ -f "$temp_path" ]; then
+            downloaded_bytes=$(stat -c '%s' "$temp_path" 2>/dev/null || printf '0')
         fi
         print_download_progress "$label" "$downloaded_bytes" "$total_bytes"
         sleep 0.2
     done
 
-    wait "$download_pid"
-    local download_status=$?
-    if [ -f "$target" ]; then
-        downloaded_bytes=$(stat -c '%s' "$target" 2>/dev/null || printf '0')
+    local download_status=0
+    wait "$download_pid" || download_status=$?
+    download_pid=""
+    if [ -f "$temp_path" ]; then
+        downloaded_bytes=$(stat -c '%s' "$temp_path" 2>/dev/null || printf '0')
     fi
     print_download_progress "$label" "$downloaded_bytes" "$total_bytes" 1
-    return "$download_status"
+    [ "$download_status" -eq 0 ] || return "$download_status"
+    local magic
+    magic=$(od -An -tx1 -N4 "$temp_path" | tr -d '[:space:]') || return 1
+    if [ ! -s "$temp_path" ] || [ "$magic" != "7f454c46" ]; then
+        log_error "$(msg invalid_binary)" >&2
+        return 1
+    fi
+    chmod +x "$temp_path" && mv -f -- "$temp_path" "$target"
+)
+
+# 等待连续五秒保持 active，避免刚启动就退出时误报成功。
+wait_service_active() {
+    local attempt active_checks=0
+    for ((attempt = 0; attempt < 30; attempt++)); do
+        if systemctl is-active --quiet "${SERVICE_NAME}.service"; then
+            active_checks=$((active_checks + 1))
+            [ "$active_checks" -ge 5 ] && return 0
+        else
+            active_checks=0
+        fi
+        sleep 1
+    done
+    return 1
 }
 
 # ==========================================================
@@ -1105,9 +1089,8 @@ install_binary() {
         return
     fi
 
-    # 选择发行版本和发布通道
-    select_edition
-    select_channel
+    show_distribution
+    select_channel || return 1
 
     # 监听端口输入，校验范围 1-65535
     while true; do
@@ -1119,60 +1102,63 @@ install_binary() {
         if [[ -z "$input_port" ]]; then
             LISTEN_PORT="$DEFAULT_PORT"
             break
-        elif [[ "$input_port" =~ ^[0-9]+$ ]] && (( input_port >= 1 && input_port <= 65535 )); then
-            LISTEN_PORT="$input_port"
+        elif [[ "$input_port" =~ ^[0-9]{1,5}$ ]] && (( 10#$input_port >= 1 && 10#$input_port <= 65535 )); then
+            LISTEN_PORT="$((10#$input_port))"
             break
         else
             ui_msgbox "$(msg title_error)" "$(msg invalid_port)"
         fi
     done
 
-    install_dependencies
+    local arch download_url
+    arch=$(detect_arch) || return 1
+    if ! install_dependencies; then
+        ui_msgbox "$(msg title_error)" "$(msg dependencies_failed)"
+        return 1
+    fi
 
-    local arch=$(detect_arch)
     log_info "$(msg detected_arch "$arch")"
 
     log_step "$(msg create_install_dir "$INSTALL_DIR")"
-    mkdir -p "$INSTALL_DIR"
+    mkdir -p "$INSTALL_DIR" || return 1
 
     log_step "$(msg create_data_dir "$DATA_DIR")"
-    mkdir -p "$DATA_DIR"
+    mkdir -p "$DATA_DIR" || return 1
 
-    local download_url=$(get_download_url "$arch")
-    if [ $? -ne 0 ]; then
+    if ! download_url=$(get_download_url "$arch"); then
         ui_msgbox "$(msg title_error)" "$(msg download_url_failed)"
         return 1
     fi
 
     progress_add "$(msg progress_download)"
-    log_step "$(msg download_binary "$EDITION_NAME")"
+    log_step "$(msg download_binary "$DISTRIBUTION_NAME")"
     log_info "$(msg download_url "$download_url")"
 
-    if ! download_file "$download_url" "$BINARY_PATH" "$EDITION_NAME"; then
+    if ! download_file "$download_url" "$BINARY_PATH" "$DISTRIBUTION_NAME"; then
         ui_msgbox "$(msg title_error)" "$(msg download_failed)"
         return 1
     fi
 
-    chmod +x "$BINARY_PATH"
-    log_success "$(msg binary_installed "$EDITION_NAME" "$BINARY_PATH")"
+    log_success "$(msg binary_installed "$DISTRIBUTION_NAME" "$BINARY_PATH")"
 
     if ! check_systemd; then
         progress_add "$(msg progress_complete)"
         local content
-        content=$(msg no_systemd_manual "$EDITION_NAME" "$BINARY_PATH" "$LISTEN_PORT")
-        content="$(printf '%s\n\n%s' "$(msg sponsor_info)" "$content")"
+        content=$(msg no_systemd_manual "$DISTRIBUTION_NAME" "$DATA_DIR" "$BINARY_PATH" "$LISTEN_PORT")
+        content="$(printf '%s\n\n%s' "$(msg distribution_info)" "$content")"
         ui_msgbox "$(msg title_install_complete)" "$content"
         return
     fi
 
     progress_add "$(msg progress_service)"
-    create_systemd_service "$LISTEN_PORT"
+    if ! create_systemd_service "$LISTEN_PORT" ||
+       ! systemctl daemon-reload ||
+       ! systemctl enable "${SERVICE_NAME}.service"; then
+        ui_msgbox "$(msg title_error)" "$(msg operation_failed)"
+        return 1
+    fi
 
-    systemctl daemon-reload
-    systemctl enable ${SERVICE_NAME}.service
-    systemctl start ${SERVICE_NAME}.service
-
-    if systemctl is-active --quiet ${SERVICE_NAME}.service; then
+    if systemctl start "${SERVICE_NAME}.service" && wait_service_active; then
         log_success "$(msg service_started)"
 
         progress_add "$(msg progress_complete)"
@@ -1191,19 +1177,22 @@ create_systemd_service() {
     local service_file="/etc/systemd/system/${SERVICE_NAME}.service"
     cat > "$service_file" << EOF
 [Unit]
-Description=Komari Monitor Service
-After=network.target
+Description=SIXOSN Komari Monitor Service
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 Type=simple
 ExecStart=${BINARY_PATH} server -l 0.0.0.0:${port}
 WorkingDirectory=${DATA_DIR}
 Restart=always
+RestartSec=5
 User=root
 
 [Install]
 WantedBy=multi-user.target
 EOF
+    [ "$?" -eq 0 ] || return 1
 
     log_success "$(msg systemd_created)"
 }
@@ -1217,7 +1206,7 @@ show_access_info() {
     content=$(msg access_info \
         "$ip" "$port" \
         "$SERVICE_NAME" "$SERVICE_NAME" "$SERVICE_NAME" "$SERVICE_NAME" "$SERVICE_NAME")
-    content="$(printf '%s\n\n%s' "$(msg sponsor_info)" "$content")"
+    content="$(printf '%s\n\n%s' "$(msg distribution_info)" "$content")"
 
     ui_msgbox "$(msg title_install_complete)" "$content"
 }
@@ -1237,15 +1226,45 @@ cleanup_backups() {
     local backup_dir
     for backup_dir in "$BACKUP_DIR" "$DATA_BACKUP_DIR"; do
         if [ -d "$backup_dir" ]; then
-            find "$backup_dir" -maxdepth 1 -type f -name '*.zip' -delete
+            find "$backup_dir" -maxdepth 1 -type f \( -name '*.zip' -o -name 'upgrade-data.*.tar.gz' \) -delete
         fi
     done
 
     ui_msgbox "$(msg title_cleanup_complete)" "$(msg cleanup_complete "${BINARY_PATH}.backup.*" "$BACKUP_DIR" "$DATA_BACKUP_DIR")"
 }
 
-# Upgrade function
-upgrade_komari() {
+# Restore both the binary and the local data snapshot after a failed start.
+# Keep failed-version data for diagnosis instead of deleting it.
+restore_upgrade() {
+    local backup_path="$1" data_backup="$2"
+    local restore_dir="" failed_data_path
+    systemctl stop "${SERVICE_NAME}.service" || return 1
+
+    if [ -n "$data_backup" ]; then
+        restore_dir=$(mktemp -d "$DATA_DIR/.komari-restore.XXXXXX") || return 1
+        tar -xzf "$data_backup" -C "$restore_dir" || return 1
+        [ -d "$restore_dir/data" ] || return 1
+    fi
+
+    if [ -e "$DATA_DIR/data" ]; then
+        failed_data_path="$DATA_DIR/data.failed.${backup_path##*.backup.}"
+        [ ! -e "$failed_data_path" ] || return 1
+        mv -- "$DATA_DIR/data" "$failed_data_path" || return 1
+    fi
+    if [ -n "$restore_dir" ]; then
+        if ! mv -- "$restore_dir/data" "$DATA_DIR/data"; then
+            [ -z "$failed_data_path" ] || mv -- "$failed_data_path" "$DATA_DIR/data"
+            return 1
+        fi
+        rmdir -- "$restore_dir" || true
+    fi
+    cp -p -- "$backup_path" "${BINARY_PATH}.rollback" &&
+        mv -f -- "${BINARY_PATH}.rollback" "$BINARY_PATH" || return 1
+    systemctl start "${SERVICE_NAME}.service" && wait_service_active
+}
+
+# Download first, then stop and back up. Old backups remain until explicit cleanup.
+upgrade_komari() (
     progress_reset
     log_step "$(msg upgrade_start)"
 
@@ -1259,59 +1278,76 @@ upgrade_komari() {
         return 1
     fi
 
-    # 选择发行版本和发布通道
-    select_edition
-    select_channel
+    show_distribution
+    select_channel || return 1
+    local arch download_url candidate_path backup_path data_backup=""
+    arch=$(detect_arch) || return 1
+    if ! install_dependencies; then
+        ui_msgbox "$(msg title_error)" "$(msg dependencies_failed)"
+        return 1
+    fi
+    if ! download_url=$(get_download_url "$arch"); then
+        ui_msgbox "$(msg title_error)" "$(msg download_url_failed)"
+        return 1
+    fi
+    candidate_path=$(mktemp "$INSTALL_DIR/.komari-upgrade.XXXXXX") || return 1
+    trap 'rm -f -- "$candidate_path"' EXIT
+    trap 'exit 130' INT
+    trap 'exit 143' TERM
+    progress_add "$(msg progress_download)"
+    log_step "$(msg downloading_latest "$DISTRIBUTION_NAME")"
+    if ! download_file "$download_url" "$candidate_path" "$DISTRIBUTION_NAME"; then
+        ui_msgbox "$(msg title_error)" "$(msg download_failed)"
+        return 1
+    fi
 
     log_step "$(msg stopping_service)"
-    systemctl stop ${SERVICE_NAME}.service
-
-    log_step "$(msg clearing_backups)"
-    rm -f -- "${BINARY_PATH}.backup."*
-
-    local backup_path="${BINARY_PATH}.backup.$(date +%Y%m%d_%H%M%S)"
+    if ! systemctl stop "${SERVICE_NAME}.service"; then
+        ui_msgbox "$(msg title_error)" "$(msg operation_failed)"
+        return 1
+    fi
     progress_add "$(msg progress_backup)"
     log_step "$(msg backing_up)"
-    if ! cp "$BINARY_PATH" "$backup_path"; then
+    backup_path=$(mktemp "${BINARY_PATH}.backup.$(date +%Y%m%d_%H%M%S).XXXXXX") || {
+        systemctl start "${SERVICE_NAME}.service"
+        return 1
+    }
+    if ! cp -p -- "$BINARY_PATH" "$backup_path"; then
         log_error "$(msg backup_failed_log)"
-        systemctl start ${SERVICE_NAME}.service
+        systemctl start "${SERVICE_NAME}.service"
         ui_msgbox "$(msg title_error)" "$(msg backup_failed)"
         return 1
     fi
-
-    local arch=$(detect_arch)
-    local download_url=$(get_download_url "$arch")
-    if [ $? -ne 0 ]; then
-        log_error "$(msg download_url_failed_log)"
-        mv "$backup_path" "$BINARY_PATH"
-        systemctl start ${SERVICE_NAME}.service
-        ui_msgbox "$(msg title_error)" "$(msg download_url_failed_restore)"
+    if [ -d "$DATA_DIR/data" ]; then
+        log_step "$(msg backing_up_data)"
+        data_backup="$BACKUP_DIR/upgrade-data.${backup_path##*.backup.}.tar.gz"
+        if ! mkdir -p "$BACKUP_DIR" ||
+           ! tar -czf "$data_backup" --exclude='data/backup' --exclude='data/backup.zip' -C "$DATA_DIR" data; then
+            systemctl start "${SERVICE_NAME}.service"
+            ui_msgbox "$(msg title_error)" "$(msg backup_failed)"
+            return 1
+        fi
+    fi
+    if ! mv -f -- "$candidate_path" "$BINARY_PATH"; then
+        systemctl start "${SERVICE_NAME}.service"
+        ui_msgbox "$(msg title_error)" "$(msg operation_failed)"
         return 1
     fi
-
-    progress_add "$(msg progress_download)"
-    log_step "$(msg downloading_latest "$EDITION_NAME")"
-    if ! download_file "$download_url" "$BINARY_PATH" "$EDITION_NAME"; then
-        log_error "$(msg download_failed_log)"
-        mv "$backup_path" "$BINARY_PATH"
-        systemctl start ${SERVICE_NAME}.service
-        ui_msgbox "$(msg title_error)" "$(msg download_failed_restore)"
-        return 1
-    fi
-
-    chmod +x "$BINARY_PATH"
 
     progress_add "$(msg progress_restart)"
     log_step "$(msg restart_start)"
-    systemctl start ${SERVICE_NAME}.service
-
-    if systemctl is-active --quiet ${SERVICE_NAME}.service; then
+    if systemctl start "${SERVICE_NAME}.service" && wait_service_active; then
         progress_add "$(msg progress_complete)"
-        ui_msgbox "$(msg title_upgrade_complete)" "$(msg upgrade_success "$EDITION_NAME" "$CHANNEL_NAME")"
+        ui_msgbox "$(msg title_upgrade_complete)" "$(msg upgrade_success "$DISTRIBUTION_NAME" "$CHANNEL_NAME")"
     else
-        ui_msgbox "$(msg title_error)" "$(msg upgrade_start_failed)"
+        if restore_upgrade "$backup_path" "$data_backup"; then
+            ui_msgbox "$(msg title_error)" "$(msg rollback_success)"
+        else
+            ui_msgbox "$(msg title_error)" "$(msg rollback_failed "$INSTALL_DIR")"
+        fi
+        return 1
     fi
-}
+)
 
 # Uninstall function
 uninstall_komari() {
@@ -1414,8 +1450,12 @@ stop_service() {
         return
     fi
     log_step "$(msg stop_start)"
-    systemctl stop ${SERVICE_NAME}.service
-    ui_msgbox "$(msg title_success)" "$(msg stop_success)"
+    if systemctl stop "${SERVICE_NAME}.service"; then
+        ui_msgbox "$(msg title_success)" "$(msg stop_success)"
+    else
+        ui_msgbox "$(msg title_error)" "$(msg operation_failed)"
+        return 1
+    fi
 }
 
 
@@ -1458,7 +1498,9 @@ main_menu() {
 }
 
 # Main execution
-check_root
-init_colors
-select_language
-main_menu
+if [[ "${BASH_SOURCE[0]}" == "$0" ]]; then
+    check_root
+    init_colors
+    select_language
+    main_menu
+fi
