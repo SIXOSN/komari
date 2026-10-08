@@ -388,12 +388,15 @@ const siteName = computed(() => appStore.privateFeaturesAllowed ? '尊敬的管�
 <style scoped>
 .slide-up-enter-active,
 .slide-up-leave-active {
-  transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition:
+    opacity 0.4s ease-out,
+    transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .slide-up-enter-from,
 .slide-up-leave-to {
   opacity: 0;
-  transform: translateX(-50%) translateY(20px);
+  /* Tailwind v4's independent translate property already centers the bar. */
+  transform: translate3d(0, 20px, 0);
 }
 
 .slide-left-enter-active,

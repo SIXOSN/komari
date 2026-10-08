@@ -172,8 +172,13 @@ onUnmounted(() => {
 .background-container {
   position: fixed;
   inset: 0;
+  /* Keep a full canvas while Android browser controls expand or retract. */
+  min-height: 100vh;
+  min-height: 100lvh;
   z-index: -1;
   overflow: hidden;
+  pointer-events: none;
+  background-color: var(--color-background);
 }
 
 .default-background {
